@@ -9,12 +9,13 @@ import datetime
 import imutils
 import time
 import cv2
+from send_mail import send_mail
 
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", help="path to the video file")
-ap.add_argument("-a", "--min-area", type=int, default=500, help="minimum area size")
+ap.add_argument("-a", "--min-area", type=int, default=1500, help="minimum area size")
 args = vars(ap.parse_args())
 
 # if the video argument is None, then we are reading from webcam
@@ -33,8 +34,12 @@ firstFrame = None
 # width = vs.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)   # float
 # height = vs.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) # float
 out = None
-save_frame_num = 6000
+CONST_TIME = 1000
+width = 500
+height = 375
+save_frame_num = CONST_TIME
 save_flag = False
+
 
 # loop over the frames of the video
 while True:
@@ -50,7 +55,7 @@ while True:
 		break
 
 	# resize the frame, convert it to grayscale, and blur it
-	frame = imutils.resize(frame, width=500,height=375)
+	frame = imutils.resize(frame, width=width,height=height)
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
@@ -99,8 +104,9 @@ while True:
 
 	if text == 'Occupied' and save_flag == False:
 		if out is None:
-			out = cv2.VideoWriter('save'+datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p")+'.avi',\
-				cv2.VideoWriter_fourcc('M','J','P','G'), 15.0, (int(500),int(375)))
+			out = cv2.VideoWriter('../save'+datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p")+'.avi',\
+				cv2.VideoWriter_fourcc('M','J','P','G'), 15.0, (int(width),int(height)))
+		send_mail('warning','there is a moving detected at '+ datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"))
 		save_flag = True
 	if save_flag == True:
 		if save_frame_num>=0:
@@ -108,8 +114,9 @@ while True:
 			save_frame_num = save_frame_num - 1
 		else:
 			save_flag = False
-			save_frame_num = 6000
+			save_frame_num = CONST_TIME
 			out.release()
+			out = None
 
 	# if the `q` key is pressed, break from the lop
 	if key == ord("q"):
