@@ -103,10 +103,10 @@ while True:
 	# save to disk
 
 	if text == 'Occupied' and save_flag == False:
+		record_time = datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p")
 		if out is None:
-			out = cv2.VideoWriter('../save'+datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p")+'.avi',\
+			out = cv2.VideoWriter('../save'+ record_time +'.avi',\
 				cv2.VideoWriter_fourcc('M','J','P','G'), 15.0, (int(width),int(height)))
-		send_mail('warning','there is a moving detected at '+ datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"))
 		save_flag = True
 	if save_flag == True:
 		if save_frame_num>=0:
@@ -117,6 +117,7 @@ while True:
 			save_frame_num = CONST_TIME
 			out.release()
 			out = None
+			send_mail('warning','there is a moving detected at '+ record_time)
 
 	# if the `q` key is pressed, break from the lop
 	if key == ord("q"):
