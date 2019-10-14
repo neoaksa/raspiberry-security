@@ -106,7 +106,7 @@ while True:
 		record_time = datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p")
 		first_frame = frame
 		if out is None:
-			out = cv2.VideoWriter('../save'+ record_time +'.avi',\
+			out = cv2.VideoWriter('../save_'+ record_time +'.avi',\
 				cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, (int(width),int(height)))
 		save_flag = True
 	if save_flag == True:
@@ -118,7 +118,7 @@ while True:
 			save_frame_num = CONST_TIME
 			out.release()
 			out = None
-			send_mail('warning','there is a moving detected at '+ record_time,first_frame)
+			send_mail('warning','there is a moving detected at '+ record_time,cv2.imencode('.jpg',first_frame)[1].tostring())
 
 	# if the `q` key is pressed, break from the lop
 	if key == ord("q"):
