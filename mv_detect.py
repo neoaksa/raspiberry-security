@@ -104,9 +104,10 @@ while True:
 
 	if text == 'Occupied' and save_flag == False:
 		record_time = datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p")
+		first_frame = frame
 		if out is None:
 			out = cv2.VideoWriter('../save'+ record_time +'.avi',\
-				cv2.VideoWriter_fourcc('M','J','P','G'), 15.0, (int(width),int(height)))
+				cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, (int(width),int(height)))
 		save_flag = True
 	if save_flag == True:
 		if save_frame_num>=0:
@@ -117,7 +118,7 @@ while True:
 			save_frame_num = CONST_TIME
 			out.release()
 			out = None
-			send_mail('warning','there is a moving detected at '+ record_time)
+			send_mail('warning','there is a moving detected at '+ record_time,first_frame)
 
 	# if the `q` key is pressed, break from the lop
 	if key == ord("q"):
