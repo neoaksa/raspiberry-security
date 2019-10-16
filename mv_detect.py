@@ -19,28 +19,30 @@ ap.add_argument("-a", "--min-area", type=int, default=10000, help="minimum area 
 ap.add_argument("-m","--is_mail",type=int, default=0,help="is send mail out")
 args = vars(ap.parse_args())
 
-# if the video argument is None, then we are reading from webcam
-if args.get("video", None) is None:
-	vs = VideoStream(src=0).start()
-	time.sleep(2.0)
-
-# otherwise, we are reading from a video file
-else:
-	vs = cv2.VideoCapture(args["video"])
 
 # initialize the first frame in the video stream
 firstFrame = None
-switch_period = 30			# change first frame every 30 mins
+switch_period = 5			# change first frame every 5 mins
 start_time = datetime.datetime.now() # start time
 # output for saving frames
 # width = vs.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)   # float
 # height = vs.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) # float
 out = None
 CONST_TIME = 1000
-width = 500
-height = 375
+width = 640
+height = 480
 save_frame_num = CONST_TIME
 save_flag = False
+
+
+# if the video argument is None, then we are reading from webcam
+if args.get("video", None) is None:
+	vs = VideoStream(src=0,resolution=(width,height)).start()
+	time.sleep(2.0)
+
+# otherwise, we are reading from a video file
+else:
+	vs = cv2.VideoCapture(args["video"])
 
 
 # loop over the frames of the video
@@ -105,10 +107,10 @@ while True:
 	# save to disk
 	if text == 'Occupied' and save_flag == False:
 		record_time = datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p")
-		first_frame = frame
+		ref_frame = frame
 		if out is None:
-			out = cv2.VideoWriter('../save_'+ record_time +'.avi',\
-				cv2.VideoWriter_fourcc('M','J','P','G'), 20.0, (int(width),int(height)))
+			out = cv2.VideoWriter('../save_'+ record_time +'.mp4',\
+				cv2.VideoWriter_fourcc(*'MP4V'), 20.0, (int(width),int(height)))
 		save_flag = True
 	if save_flag == True:
 		if save_frame_num>=0:
@@ -120,7 +122,7 @@ while True:
 			out.release()
 			out = None
 			if args['is_mail'] == 1:
-				send_mail('warning','there is a moving detected at '+ record_time,cv2.imencode('.jpg',first_frame)[1].tostring())
+				send_mail('warning','there is a moving detected at '+ record_time,cv2.imencode('.jpg',ref_frame)[1].tostring())
 	
 	# switch reference frame
 	if ((datetime.datetime.now() - start_time).seconds / 60) > switch_period\
