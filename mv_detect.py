@@ -10,11 +10,64 @@ import imutils
 import time
 import cv2
 from send_mail import send_mail
+from multiprocessing import Process
+from multiprocessing import Queue
+import multiprocessing
+import numpy as np
 
+#--------------dnn model----------------------------------------
+multiprocessing.set_start_method('spawn', True)
+# classfy the frame in the Queue
+def classify_frame(net, inputQueue, outputQueue):
+	# keep looping
+	while True:
+		# check to see if there is a frame in our input queue
+		if not inputQueue.empty():
+			# grab the frame from the input queue, resize it, and
+			# construct a blob from it
+			frame = inputQueue.get()
+			frame = cv2.resize(frame, (300, 300))
+			blob = cv2.dnn.blobFromImage(frame, 0.007843,
+				(300, 300), 127.5)
 
+			# set the blob as input to our deep learning object
+			# detector and obtain the detections
+			net.setInput(blob)
+			detections = net.forward()
+
+			# write the detections to the output queue
+			outputQueue.put(detections)
+
+# initialize the list of class labels MobileNet SSD was trained to
+# detect, then generate a set of bounding box colors for each class
+CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
+	"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+	"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+	"sofa", "train", "tvmonitor"]
+COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
+
+# load our serialized model from disk
+print("[INFO] loading model...")
+net = cv2.dnn.readNetFromCaffe('./MobileNetSSD_deploy.prototxt.txt','MobileNetSSD_deploy.caffemodel')
+# initialize the input queue (frames), output queue (detections),
+# and the list of actual detections returned by the child process
+inputQueue = Queue(maxsize=1)
+outputQueue = Queue(maxsize=1)
+detections = None
+
+# construct a child process *indepedent* from our main process of
+# execution
+print("[INFO] starting process...")
+p = Process(target=classify_frame, args=(net, inputQueue,
+	outputQueue,))
+p.daemon = True
+p.start()
+
+# ---------------------- opencv model--------------------------------
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-v", "--video", help="path to the video file")
+ap.add_argument("-v", "--video", help="path to the video file", \
+	default='/home/jie-desktop/Downloads/hmdb51_org/walk/20060723sfjffprofessionalhelp_walk_u_nm_np2_le_med_0.avi')
 ap.add_argument("-a", "--min-area", type=int, default=10000, help="minimum area size")
 ap.add_argument("-m","--is_mail",type=int, default=0,help="is send mail out")
 args = vars(ap.parse_args())
@@ -89,6 +142,10 @@ while True:
 		# compute the bounding box for the contour, draw it on the frame,
 		# and update the text
 		(x, y, w, h) = cv2.boundingRect(c)
+		# ------------------- send intereting part into DNN model---------------------------
+		# crop part of image for Dnn model
+		crop = frame[y:y+h,x:x+w]
+		cv2.imshow(crop)
 		cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 		text = "Occupied"
 
@@ -103,7 +160,7 @@ while True:
 	cv2.imshow("Thresh", thresh)
 	cv2.imshow("Frame Delta", frameDelta)
 	key = cv2.waitKey(1) & 0xFF
-
+	time.sleep(0.3) # for testing only!!!
 	# save to disk
 	if text == 'Occupied' and save_flag == False:
 		record_time = datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p")

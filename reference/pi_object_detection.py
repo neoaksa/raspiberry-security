@@ -1,5 +1,5 @@
 # USAGE
-# python3 pi_object_detection.py  --prototxt ./MobileNetSSD_deploy.prototxt.txt  --model ./MobileNetSSD_deploy.caffemodel
+# python3 pi_object_detection.py  --prototxt MobileNetSSD_deploy.prototxt.txt  --model MobileNetSSD_deploy.caffemodel
 
 # import the necessary packages
 from imutils.video import VideoStream
@@ -11,7 +11,10 @@ import argparse
 import imutils
 import time
 import cv2
+import os
+import multiprocessing
 
+multiprocessing.set_start_method('spawn', True)
 def classify_frame(net, inputQueue, outputQueue):
 	# keep looping
 	while True:
@@ -34,14 +37,16 @@ def classify_frame(net, inputQueue, outputQueue):
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-p", "--prototxt", required=True,
+ap.add_argument("-p", "--prototxt",  default='./MobileNetSSD_deploy.prototxt.txt',
 	help="path to Caffe 'deploy' prototxt file")
-ap.add_argument("-m", "--model", required=True,
+ap.add_argument("-m", "--model", default='./MobileNetSSD_deploy.caffemodel',
 	help="path to Caffe pre-trained model")
 ap.add_argument("-c", "--confidence", type=float, default=0.2,
 	help="minimum probability to filter weak detections")
 args = vars(ap.parse_args())
 
+
+print(os.getcwd())
 # initialize the list of class labels MobileNet SSD was trained to
 # detect, then generate a set of bounding box colors for each class
 CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
@@ -65,13 +70,14 @@ detections = None
 print("[INFO] starting process...")
 p = Process(target=classify_frame, args=(net, inputQueue,
 	outputQueue,))
-p.daemon = True
+# p.daemon = True
 p.start()
 
 # initialize the video stream, allow the cammera sensor to warmup,
 # and initialize the FPS counter
 print("[INFO] starting video stream...")
-vs = VideoStream(src=0).start()
+# vs = VideoStream(src=0).start()
+vs = cv2.VideoCapture('/home/jie-desktop/Downloads/hmdb51_org/walk/20060723sfjffprofessionalhelp_walk_u_nm_np2_le_med_0.avi')
 # vs = VideoStream(usePiCamera=True).start()
 time.sleep(2.0)
 fps = FPS().start()
@@ -81,6 +87,7 @@ while True:
 	# grab the frame from the threaded video stream, resize it, and
 	# grab its imensions
 	frame = vs.read()
+	frame = frame if args.get("video", None) is None else frame[1]
 	frame = imutils.resize(frame, width=400)
 	(fH, fW) = frame.shape[:2]
 
